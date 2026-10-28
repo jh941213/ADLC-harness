@@ -1,6 +1,5 @@
 # TypeScript/Express — Untrusted Input 경로 전수 추출
 # 취약점을 찾는 게 아니라 AI가 검토해야 할 모든 후보군을 추출
-# 출처: 토스 Security Research 패턴
 rules:
   - id: ts-express-anycall-taint
     languages: [typescript, javascript]
@@ -38,8 +37,11 @@ rules:
           - pattern: req.cookies.$FIELD
 
     pattern-sinks:
-      - pattern: $F(...)
-      - pattern: $OBJ.$M(...)
+      # 호출의 인자를 sink로 둔다. 호출 전체($F(...))를 sink로 두면
+      # app.get(path, (req, res) => ...) 안의 인라인 핸들러를 놓친다
+      - patterns:
+          - pattern: $F(..., $ARG, ...)
+          - focus-metavariable: $ARG
 
   - id: ts-nextjs-anycall-taint
     languages: [typescript, javascript]
@@ -55,5 +57,8 @@ rules:
           - pattern: request.nextUrl.searchParams.$M(...)
 
     pattern-sinks:
-      - pattern: $F(...)
-      - pattern: $OBJ.$M(...)
+      # 호출의 인자를 sink로 둔다. 호출 전체($F(...))를 sink로 두면
+      # app.get(path, (req, res) => ...) 안의 인라인 핸들러를 놓친다
+      - patterns:
+          - pattern: $F(..., $ARG, ...)
+          - focus-metavariable: $ARG

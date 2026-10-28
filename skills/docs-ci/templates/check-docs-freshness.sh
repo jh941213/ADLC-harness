@@ -35,18 +35,17 @@ for line in text.splitlines():
 if current: entries.append(current)
 
 def latest_commit_ts(paths):
-    ts = 0
-    for p in paths:
-        if p.startswith("!"): continue
-        try:
-            out = subprocess.run(
-                ["git", "log", "-1", "--format=%ct", "--", p],
-                capture_output=True, text=True, timeout=30,
-            ).stdout.strip()
-            if out: ts = max(ts, int(out))
-        except Exception:
-            pass
-    return ts
+    # covers는 glob(** = 하위 전체)이고 "!패턴"은 제외다. 포함 패턴이 없으면 검사하지 않는다
+    if not any(not p.startswith("!") for p in paths): return 0
+    spec = [":(exclude,glob)" + p[1:] if p.startswith("!") else ":(glob)" + p for p in paths]
+    try:
+        out = subprocess.run(
+            ["git", "log", "-1", "--format=%ct", "--", *spec],
+            capture_output=True, text=True, timeout=30,
+        ).stdout.strip()
+        return int(out) if out else 0
+    except Exception:
+        return 0
 
 today = datetime.date.today()
 stale = []

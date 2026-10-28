@@ -14,12 +14,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: lychee
+      - name: 내부 링크 (깨지면 fail)
         uses: lycheeverse/lychee-action@v2
         with:
-          args: --no-progress --include-fragments 'docs/**/*.md' '*.md'
+          args: --offline --no-progress --include-fragments 'docs/**/*.md' '*.md'
           fail: true
-        continue-on-error: true # 외부 링크 플레이크 대비 — 내부 전용으로 좁히면 false로
+      - name: 외부 링크 (경고만)
+        uses: lycheeverse/lychee-action@v2
+        with:
+          args: --no-progress 'docs/**/*.md' '*.md'
+          fail: true
+        continue-on-error: true # 외부 사이트 플레이크는 막지 않는다
 
   openapi:
     name: OpenAPI lint + breaking
@@ -36,28 +41,27 @@ jobs:
         if: github.event_name == 'pull_request'
         run: |
           [ -f docs/api/openapi.yaml ] || exit 0
-          git show origin/${{ github.base_ref }}:docs/api/openapi.yaml > /tmp/base-openapi.yaml 2>/dev/null || exit 0
-          npx --yes oasdiff breaking /tmp/base-openapi.yaml docs/api/openapi.yaml --fail-on ERR
+          git show "origin/${{ github.base_ref }}:docs/api/openapi.yaml" > base-openapi.yaml 2>/dev/null || { echo "base에 명세 없음 — skip"; exit 0; }
+          # npm의 oasdiff는 빈 placeholder 패키지다. 공식 Docker 이미지를 쓴다
+          docker run --rm -v "$PWD:/w:ro" -w /w tufin/oasdiff breaking base-openapi.yaml docs/api/openapi.yaml --fail-on ERR
 
   mermaid:
     name: mermaid 문법 검증
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Extract & validate mermaid blocks
+      - name: Validate mermaid blocks
         run: |
-          mkdir -p /tmp/mmd
-          # 내장변수 FILENAME 할당 금지 — 별도 변수(out) + 괄호 리다이렉트. 추출 실패는 step 실패로 드러나야 함
-          find docs -name "*.md" -print0 2>/dev/null | while IFS= read -r -d '' f; do
-            awk -v out="/tmp/mmd/$(basename "$f")" '/```mermaid/{n++; f2=1; next} /```/{f2=0} f2{print > (out "_" n ".mmd")}' "$f"
-          done
-          count=$(find /tmp/mmd -name "*.mmd" 2>/dev/null | wc -l)
-          [ "$count" -eq 0 ] && { echo "mermaid 블록 없음"; exit 0; }
+          grep -rq --include='*.md' '```mermaid' docs 2>/dev/null || { echo "mermaid 블록 없음"; exit 0; }
           npm install -g @mermaid-js/mermaid-cli
-          fail=0
-          for b in /tmp/mmd/*.mmd; do
-            mmdc -i "$b" -o /dev/null || { echo "❌ $b"; fail=1; }
-          done
+          # mmdc는 .md 입력의 mermaid 블록을 모두 렌더한다. -o는 svg·png·pdf·md만 받는다(/dev/null 불가)
+          out="$RUNNER_TEMP/mmd"; mkdir -p "$out"
+          echo '{"args":["--no-sandbox"]}' > "$RUNNER_TEMP/puppeteer.json"
+          fail=0; n=0
+          while IFS= read -r -d '' f; do
+            n=$((n+1))
+            mmdc -p "$RUNNER_TEMP/puppeteer.json" -i "$f" -o "$out/$n.md" || { echo "::error file=$f::mermaid 렌더 실패"; fail=1; }
+          done < <(grep -rl --null --include='*.md' '```mermaid' docs)
           exit $fail
 
   freshness:

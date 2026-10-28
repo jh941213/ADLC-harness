@@ -7,7 +7,7 @@ tags: async, parallelization, dependencies, better-all
 
 ## Dependency-Based Parallelization
 
-For operations with partial dependencies, use `better-all` to maximize parallelism. It automatically starts each task at the earliest possible moment.
+For operations with partial dependencies, start each task at the earliest possible moment. If `better-all` is already installed it does this automatically; otherwise use the dependency-free alternative below rather than adding a package.
 
 **Incorrect (profile waits for config unnecessarily):**
 

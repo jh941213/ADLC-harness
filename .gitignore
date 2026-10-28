@@ -1,0 +1,5 @@
+node_modules/
+.brainstorm/
+# 저장소 안으로 옮긴 auto memory(memory 스킬 E)는 개인 기록이라 올리지 않는다
+.agents/memory/
+.DS_Store

@@ -1,6 +1,6 @@
 ---
 name: typescript-advanced-types
-description: Master TypeScript's advanced type system including generics, conditional types, mapped types, template literals, and utility types for building type-safe applications. Use when implementing complex type logic, creating reusable type utilities, or ensuring compile-time type safety in TypeScript projects. Triggers on "TypeScript 타입", "제네릭", "conditional types", "mapped types", "utility types", "타입 유틸리티". Anti-triggers: "JavaScript", "Python 타입 힌트", "일반 TS 코딩".
+description: Use when implementing complex TypeScript type logic: generics, conditional or mapped types, template literal types, reusable type utilities. Triggers - TypeScript 타입, 제네릭, 타입 유틸리티.
 user-invocable: false
 ---
 
@@ -671,7 +671,7 @@ function processValue(value: unknown) {
 2. **Prefer `interface` for object shapes**: Better error messages
 3. **Use `type` for unions and complex types**: More flexible
 4. **Leverage type inference**: Let TypeScript infer when possible
-5. **Create helper types**: Build reusable type utilities
+5. **Create helper types when reused**: Inline a one-off type instead of adding a utility
 6. **Use const assertions**: Preserve literal types
 7. **Avoid type assertions**: Use type guards instead
 8. **Document complex types**: Add JSDoc comments
@@ -692,11 +692,12 @@ type Test1 = AssertEqual<string, string>; // true
 type Test2 = AssertEqual<string, number>; // false
 type Test3 = AssertEqual<string | number, string>; // false
 
-// Expect error helper
-type ExpectError<T extends never> = T;
+// Make the compiler enforce it: tsc fails if a type test is not `true`
+type Expect<T extends true> = T;
 
-// Example usage
-type ShouldError = ExpectError<AssertEqual<string, number>>;
+type _ok = Expect<AssertEqual<Exclude<"a" | "b", "a">, "b">>;
+// @ts-expect-error — string is not number; tsc errors if this line ever compiles
+type _bad = Expect<AssertEqual<string, number>>;
 ```
 
 ## Common Pitfalls
@@ -713,9 +714,9 @@ type ShouldError = ExpectError<AssertEqual<string, number>>;
 
 - Avoid deeply nested conditional types
 - Use simple types when possible
-- Cache complex type computations
+- Name intermediate results with type aliases instead of recomputing them inline
 - Limit recursion depth in recursive types
-- Use build tools to skip type checking in production
+- Measure with `tsc --extendedDiagnostics` before optimizing types
 
 ## Resources
 

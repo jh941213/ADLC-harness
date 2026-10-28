@@ -1,6 +1,6 @@
 ---
 name: docs-interfaces
-description: "인터페이스/API 문서 생성 — OpenAPI 3.1/AsyncAPI 3.0 명세, API 구성도, 인터페이스 흐름도(시퀀스), API 변경 이력. API 문서/명세(OpenAPI, swagger, AsyncAPI) 작성, 인터페이스·API 구성도, 엔드포인트 문서, API changelog가 필요할 때. 시스템 전체 구성도는 docs-architecture, 사용자 매뉴얼은 docs-manuals, API 설계 원칙 자체는 api-design-principles 사용"
+description: "API·이벤트 인터페이스 문서(OpenAPI·swagger·AsyncAPI 명세, 엔드포인트 레퍼런스, API 구성도·시퀀스, API CHANGELOG)를 만들거나 코드와 맞출 때 사용. 시스템 구성도는 docs-architecture, API 설계 원칙은 api-design-principles."
 user-invocable: true
 disable-model-invocation: false
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash
@@ -21,7 +21,7 @@ $ARGUMENTS
 | REST API | OpenAPI 3.1 명세 | `docs/api/openapi.yaml` |
 | 이벤트/메시지 인터페이스 | AsyncAPI 3.0 명세 | `docs/api/asyncapi.yaml` |
 | API 구성도 (시스템 간 호출 관계) | C4 Container + 핵심 플로우별 시퀀스 다이어그램 | `docs/api/README.md` |
-| 사람이 읽는 레퍼런스 | 엔드포인트별 마크다운 (기존 docs-writer의 api.md 형식 계승) | `docs/api/reference.md` |
+| 사람이 읽는 레퍼런스 | 엔드포인트별 요청·응답 표 + 복붙 가능한 호출 예시 | `docs/api/reference.md` |
 | API 변경 이력 | breaking/non-breaking 구분 + deprecation 일정 | `docs/api/CHANGELOG.md` |
 
 ## Spec-first vs Code-first 판단
@@ -65,8 +65,8 @@ $ARGUMENTS
 2. 기존 명세가 있으면 실제 코드와 대조 → 불일치 목록 먼저 보고 후 갱신
 3. 신규면 OpenAPI 3.1 골격 생성 → 리소스별 채움
 4. `docs/api/README.md`에 구성도 + 플로우 다이어그램
-5. `docs/docs.yaml` 매니페스트에 `docs/api/*` 항목 갱신 (covers: 라우트 경로 글롭)
-6. 명세 검증: `npx @redocly/cli lint docs/api/openapi.yaml` 또는 `npx @stoplight/spectral-cli lint` (설치돼 있을 때만, 없으면 스킵하고 docs-ci 설치 제안)
+5. `docs/docs.yaml`이 있으면 `docs/api/*` 항목 갱신 (covers: 라우트 경로 글롭)
+6. 명세 검증: `npx @redocly/cli lint docs/api/openapi.yaml`(프로젝트가 spectral을 쓰면 `npx @stoplight/spectral-cli lint`)을 돌리고 출력으로 보고한다. 돌릴 수 없으면 "검증 안 함"이라고 보고하고, 반복 검증이 필요하면 docs-ci를 제안한다
 
 ## 제약
 

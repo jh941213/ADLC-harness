@@ -21,7 +21,7 @@ argument-hint: "[code|arch|api|manual|ops|ci|sync|all]"
 | `/docs sync` | 문서 드리프트 감지 → stale 문서 갱신 | 아래 sync 절차 |
 | `/docs all` | 전체 문서 세트 일괄 생성 | 아래 all 절차 |
 
-\* `/docs`(무인자)와 `/docs code`는 동일한 docs-writer 실행 — 무인자는 최근 변경분만 증분 갱신, `code`는 코드 레벨 문서 전체(api.md, components.md, utils.md, models.md)를 생성/갱신.
+\* `/docs`(무인자)와 `/docs code`는 같은 docs-writer 실행 — 무인자는 최근 변경분만 증분 갱신, `code`는 코드 레벨 문서 전체(components.md, utils.md, models.md 등)를 생성/갱신. API 레퍼런스는 `/docs api`.
 
 ## `/docs sync` 절차 (문서-코드 동기화)
 
@@ -34,7 +34,7 @@ argument-hint: "[code|arch|api|manual|ops|ci|sync|all]"
    - `docs/manuals/*`, `docs/ops/*` → docs-manuals
    - `docs/*.md` 코드 문서 → docs-writer
 5. 갱신된 문서의 `last_reviewed`를 오늘로 갱신
-6. `.docs-queue/`가 있으면(TTH 모드) 처리 후 큐 파일 삭제
+6. 2번 검사를 다시 돌려 그 출력으로 보고
 
 ## `/docs all` 절차
 
@@ -47,11 +47,11 @@ Agent C (docs-interfaces 스킬): API 명세 + 구성도
 Agent D (docs-manuals 스킬): 매뉴얼 + 운영 문서
 ```
 
-완료 후 docs-ci 스킬로 매니페스트 + CI 파이프라인 설치, `docs/README.md` 인덱스 갱신.
+완료 후 `docs/README.md` 인덱스를 갱신한다. docs-ci(매니페스트·CI 워크플로) 설치는 사용자에게 묻는다.
 
 ## 구현 에이전트와 병렬 실행
 
-구현 작업 중 docs-writer를 background로 함께 실행하는 패턴 (TTH에서는 hook이 자동 트리거):
+구현 중 docs-writer를 background 서브에이전트로 함께 돌릴 수 있다. 결과는 커밋 전에 확인해 같은 커밋에 넣는다(구현이 plan·docs와 달라지면 같은 커밋에서 문서를 고친다).
 
 ```
 Agent(subagent_type: "docs-writer", run_in_background: true, prompt: "...")
@@ -59,9 +59,10 @@ Agent(subagent_type: "docs-writer", run_in_background: true, prompt: "...")
 
 ## 중요 규칙
 
-- /docs/ 폴더만 수정 (소스 코드 절대 수정 금지)
+- `docs/` 폴더만 수정 (소스 코드 수정 금지)
 - 기존 문서가 있으면 덮어쓰기가 아닌 업데이트 (Edit 우선)
 - 설명은 한국어, 코드/변수명은 원문 유지
 - 코드 읽으면 아는 것은 생략 — "왜"와 "언제"를 문서화
 - 빈 유형은 문서 파일 생성하지 않음
-- 문서를 만들거나 갱신하면 `docs/docs.yaml`의 해당 항목도 갱신
+- 문서를 만들거나 갱신하면 `docs/docs.yaml`이 있을 때 해당 항목도 갱신
+- 코드에서 확인한 것만 쓰고, 확인하지 못한 것은 TODO로 남겨 보고한다

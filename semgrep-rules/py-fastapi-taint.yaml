@@ -1,5 +1,6 @@
 # Python/FastAPI — Untrusted Input 경로 전수 추출
 # AI가 검토해야 할 모든 후보군을 추출 (취약점 탐지 아님)
+# 데코레이터는 ($PATH, ...) — response_model 같은 인자가 붙은 라우트도 잡는다
 rules:
   - id: py-fastapi-anycall-taint
     languages: [python]
@@ -11,7 +12,7 @@ rules:
       # Path parameters
       - patterns:
           - pattern-inside: |
-              @$APP.$METHOD($PATH)
+              @$APP.$METHOD($PATH, ...)
               def $FUNC(..., $PARAM: $TYPE, ...):
                   ...
           - pattern: $PARAM
@@ -19,7 +20,7 @@ rules:
       # Request body (Pydantic model)
       - patterns:
           - pattern-inside: |
-              @$APP.$METHOD($PATH)
+              @$APP.$METHOD($PATH, ...)
               def $FUNC(..., $BODY: $MODEL, ...):
                   ...
           - pattern: $BODY.$FIELD
@@ -27,7 +28,7 @@ rules:
       # Query parameters
       - patterns:
           - pattern-inside: |
-              @$APP.$METHOD($PATH)
+              @$APP.$METHOD($PATH, ...)
               def $FUNC(..., $Q: $TYPE = Query(...), ...):
                   ...
           - pattern: $Q

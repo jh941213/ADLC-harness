@@ -1,15 +1,12 @@
 ---
 name: python-testing-patterns
-description: |
-  Implement comprehensive testing strategies with pytest, fixtures, mocking, and test-driven development.
-  트리거: "pytest", "Python 테스트", "fixture", "mocking", "테스트 작성"
-  안티-트리거: "JavaScript 테스트", "Jest", "E2E 테스트"
+description: Python 테스트를 pytest로 작성·정리할 때(fixture, parametrize, mock·monkeypatch, async 테스트, hypothesis, 커버리지·CI 설정). Triggers - pytest, Python 테스트, fixture, mocking. JS·E2E 테스트에는 쓰지 않는다.
 user-invocable: false
 ---
 
 # Python Testing Patterns
 
-Comprehensive guide to implementing robust testing strategies in Python using pytest, fixtures, mocking, parameterization, and test-driven development practices.
+pytest patterns: fixtures, parametrization, mocking, async tests, property-based tests, and configuration. For the test-first workflow itself (red → green → refactor) use the `test-driven-development` skill; for a failing test you don't understand, `systematic-debugging`.
 
 ## When to Use This Skill
 
@@ -23,52 +20,6 @@ Comprehensive guide to implementing robust testing strategies in Python using py
 - Implementing property-based testing
 - Testing database operations
 - Debugging failing tests
-
-## Core Concepts
-
-### 1. Test Types
-
-- **Unit Tests**: Test individual functions/classes in isolation
-- **Integration Tests**: Test interaction between components
-- **Functional Tests**: Test complete features end-to-end
-- **Performance Tests**: Measure speed and resource usage
-
-### 2. Test Structure (AAA Pattern)
-
-- **Arrange**: Set up test data and preconditions
-- **Act**: Execute the code under test
-- **Assert**: Verify the results
-
-### 3. Test Coverage
-
-- Measure what code is exercised by tests
-- Identify untested code paths
-- Aim for meaningful coverage, not just high percentages
-
-### 4. Test Isolation
-
-- Tests should be independent
-- No shared state between tests
-- Each test should clean up after itself
-
-## Quick Start
-
-```python
-# test_example.py
-def add(a, b):
-    return a + b
-
-def test_add():
-    """Basic test example."""
-    result = add(2, 3)
-    assert result == 5
-
-def test_add_negative():
-    """Test with negative numbers."""
-    assert add(-1, 1) == 0
-
-# Run with: pytest test_example.py
-```
 
 ## Fundamental Patterns
 
@@ -375,8 +326,9 @@ def test_exception_info():
 ### Pattern 6: Testing Async Code
 
 ```python
-# test_async.py
+# test_async.py  (pip install pytest-asyncio)
 import pytest
+import pytest_asyncio
 import asyncio
 
 async def fetch_data(url: str) -> dict:
@@ -404,7 +356,7 @@ async def test_concurrent_fetches():
     assert all("data" in r for r in results)
 
 
-@pytest.fixture
+@pytest_asyncio.fixture  # plain @pytest.fixture works only with asyncio_mode = "auto"
 async def async_client():
     """Async fixture."""
     client = {"connected": True}
@@ -676,6 +628,7 @@ def test_function():  # Doesn't explain what's tested
 
 ```python
 # test_markers.py
+import os
 import pytest
 
 @pytest.mark.slow
@@ -709,6 +662,7 @@ def test_known_bug():
     assert False
 
 
+# Register custom markers (slow, integration) in pytest config; with --strict-markers typos fail.
 # Run with:
 # pytest -m slow          # Run only slow tests
 # pytest -m "not slow"    # Skip slow tests
@@ -734,176 +688,13 @@ pytest --cov=myapp --cov-fail-under=80 tests/
 pytest --cov=myapp --cov-report=term-missing tests/
 ```
 
-## Testing Database Code
+## Database tests, CI/CD and configuration
 
-```python
-# test_database_models.py
-import pytest
-from sqlalchemy import create_engine, Column, Integer, String
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, Session
-
-Base = declarative_base()
-
-
-class User(Base):
-    """User model."""
-    __tablename__ = "users"
-
-    id = Column(Integer, primary_key=True)
-    name = Column(String(50))
-    email = Column(String(100), unique=True)
-
-
-@pytest.fixture(scope="function")
-def db_session() -> Session:
-    """Create in-memory database for testing."""
-    engine = create_engine("sqlite:///:memory:")
-    Base.metadata.create_all(engine)
-
-    SessionLocal = sessionmaker(bind=engine)
-    session = SessionLocal()
-
-    yield session
-
-    session.close()
-
-
-def test_create_user(db_session):
-    """Test creating a user."""
-    user = User(name="Test User", email="test@example.com")
-    db_session.add(user)
-    db_session.commit()
-
-    assert user.id is not None
-    assert user.name == "Test User"
-
-
-def test_query_user(db_session):
-    """Test querying users."""
-    user1 = User(name="User 1", email="user1@example.com")
-    user2 = User(name="User 2", email="user2@example.com")
-
-    db_session.add_all([user1, user2])
-    db_session.commit()
-
-    users = db_session.query(User).all()
-    assert len(users) == 2
-
-
-def test_unique_email_constraint(db_session):
-    """Test unique email constraint."""
-    from sqlalchemy.exc import IntegrityError
-
-    user1 = User(name="User 1", email="same@example.com")
-    user2 = User(name="User 2", email="same@example.com")
-
-    db_session.add(user1)
-    db_session.commit()
-
-    db_session.add(user2)
-
-    with pytest.raises(IntegrityError):
-        db_session.commit()
-```
-
-## CI/CD Integration
-
-```yaml
-# .github/workflows/test.yml
-name: Tests
-
-on: [push, pull_request]
-
-jobs:
-  test:
-    runs-on: ubuntu-latest
-
-    strategy:
-      matrix:
-        python-version: ["3.9", "3.10", "3.11", "3.12"]
-
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: ${{ matrix.python-version }}
-
-      - name: Install dependencies
-        run: |
-          pip install -e ".[dev]"
-          pip install pytest pytest-cov
-
-      - name: Run tests
-        run: |
-          pytest --cov=myapp --cov-report=xml
-
-      - name: Upload coverage
-        uses: codecov/codecov-action@v3
-        with:
-          file: ./coverage.xml
-```
-
-## Configuration Files
-
-```ini
-# pytest.ini
-[pytest]
-testpaths = tests
-python_files = test_*.py
-python_classes = Test*
-python_functions = test_*
-addopts =
-    -v
-    --strict-markers
-    --tb=short
-    --cov=myapp
-    --cov-report=term-missing
-markers =
-    slow: marks tests as slow
-    integration: marks integration tests
-    unit: marks unit tests
-    e2e: marks end-to-end tests
-```
-
-```toml
-# pyproject.toml
-[tool.pytest.ini_options]
-testpaths = ["tests"]
-python_files = ["test_*.py"]
-addopts = [
-    "-v",
-    "--cov=myapp",
-    "--cov-report=term-missing",
-]
-
-[tool.coverage.run]
-source = ["myapp"]
-omit = ["*/tests/*", "*/migrations/*"]
-
-[tool.coverage.report]
-exclude_lines = [
-    "pragma: no cover",
-    "def __repr__",
-    "raise AssertionError",
-    "raise NotImplementedError",
-]
-```
-
-## Resources
-
-- **pytest documentation**: https://docs.pytest.org/
-- **unittest.mock**: https://docs.python.org/3/library/unittest.mock.html
-- **hypothesis**: Property-based testing
-- **pytest-asyncio**: Testing async code
-- **pytest-cov**: Coverage reporting
-- **pytest-mock**: pytest wrapper for mock
+Read `references/db-ci-config.md` in this skill folder when testing database code, wiring tests into CI, or writing pytest/coverage configuration.
 
 ## Best Practices Summary
 
-1. **Write tests first** (TDD) or alongside code
+1. **Write tests first** (`test-driven-development`) or alongside code
 2. **One assertion per test** when possible
 3. **Use descriptive test names** that explain behavior
 4. **Keep tests independent** and isolated

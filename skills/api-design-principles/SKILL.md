@@ -1,9 +1,6 @@
 ---
 name: api-design-principles
-description: >
-  REST 및 GraphQL API 설계 원칙 가이드. 새로운 API 설계, API 스펙 리뷰, API 설계 표준 수립 시 활용.
-  트리거: "API 설계", "REST", "GraphQL", "엔드포인트 설계", "API versioning", "API 패턴"
-  안티-트리거: "프론트엔드 UI", "데이터베이스 스키마만", "CSS/스타일링", "배포/인프라"
+description: REST·GraphQL API를 새로 설계하거나, 엔드포인트·스키마·버전 관리·에러 형식·페이지네이션을 정하거나 API 스펙을 리뷰할 때. Triggers - API 설계, REST, GraphQL, 엔드포인트 설계, API versioning.
 user-invocable: false
 ---
 
@@ -164,6 +161,7 @@ async def list_users(
 ### Pattern 3: Error Handling and Status Codes
 
 ```python
+from typing import Any, List, Optional
 from fastapi import HTTPException, status
 from pydantic import BaseModel
 
@@ -209,7 +207,7 @@ def raise_validation_error(errors: List[ValidationErrorDetail]):
         detail={
             "error": "ValidationError",
             "message": "Request validation failed",
-            "details": {"errors": [e.dict() for e in errors]}
+            "details": {"errors": [e.model_dump() for e in errors]}
         }
     )
 
@@ -229,7 +227,8 @@ class UserResponse(BaseModel):
     id: str
     name: str
     email: str
-    _links: dict
+    # Pydantic treats `_name` attributes as private (never serialized), so alias the field.
+    links: dict = Field(serialization_alias="_links")
 
     @classmethod
     def from_user(cls, user: User, base_url: str):
@@ -237,7 +236,7 @@ class UserResponse(BaseModel):
             id=user.id,
             name=user.name,
             email=user.email,
-            _links={
+            links={
                 "self": {"href": f"{base_url}/api/users/{user.id}"},
                 "orders": {"href": f"{base_url}/api/users/{user.id}/orders"},
                 "update": {
@@ -523,10 +522,7 @@ def create_context():
 
 ## Resources
 
-- **references/rest-best-practices.md**: Comprehensive REST API design guide
+- **references/rest-best-practices.md**: REST API design guide
 - **references/graphql-schema-design.md**: GraphQL schema patterns and anti-patterns
-- **references/api-versioning-strategies.md**: Versioning approaches and migration paths
 - **assets/rest-api-template.py**: FastAPI REST API template
-- **assets/graphql-schema-template.graphql**: Complete GraphQL schema example
 - **assets/api-design-checklist.md**: Pre-implementation review checklist
-- **scripts/openapi-generator.py**: Generate OpenAPI specs from code

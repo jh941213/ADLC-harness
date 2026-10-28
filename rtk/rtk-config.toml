@@ -1,0 +1,5 @@
+# RTK 설정 파일(`rtk config` 첫 줄의 경로)에 넣는 내용. 이미 [hooks]가 있으면 exclude_commands 목록을 합친다.
+# RTK hook은 재작성한 명령을 권한 확인 없이 허용하고, 사용자의 권한 규칙은 재작성된 `rtk …` 명령 기준으로 평가된다.
+# 그래서 쓰기·외부로 나가는 명령은 재작성하지 않고 원래 권한 흐름에 맡긴다. 읽기 명령(status·diff·log·테스트·빌드)만 줄인다.
+[hooks]
+exclude_commands = ["git push", "git commit", "git branch", "git checkout", "git switch", "git stash", "git reset", "git rebase", "git merge", "git clean", "git tag", "gh", "aws", "kubectl", "docker", "terraform"]

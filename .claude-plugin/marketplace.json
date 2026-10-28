@@ -1,31 +1,17 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
-  "name": "my-cc-harness",
+  "name": "adlc-harness",
   "owner": {
-    "name": "jh941213",
-    "email": ""
+    "name": "jh941213"
   },
-  "metadata": {
-    "description": "Boris Cherny 팁 + 논문 기반 최적화 올인원 플러그인 (Opus 5 세대)",
-    "version": "1.2.0"
-  },
+  "description": "ADLC Harness plugin marketplace",
   "plugins": [
     {
-      "name": "my-cc-harness",
+      "name": "adlc-harness",
       "source": "./",
-      "description": "워크플로우 19개 + docs 스위트 4개 + 기술 스킬 10개 + E2E/Stitch 5개 + 이미지 1개 + 에이전트 12개 + 커맨드 3개 + hooks 보장 시스템 올인원",
-      "version": "1.2.0",
-      "category": "productivity",
-      "tags": [
-        "boris-cherny",
-        "skills-sh",
-        "all-in-one",
-        "workflow",
-        "docs",
-        "react",
-        "fastapi",
-        "opus-5"
-      ]
+      "description": "Ponytail·의도→설계→계획 흐름·auto memory 확장·리드/워커 메모리박스·검증 투표 리뷰를 묶은 Claude Code·Codex·Copilot CLI 공용 개발 하네스. 런타임 의존성 0.",
+      "version": "2.1.0",
+      "category": "productivity"
     }
   ]
 }

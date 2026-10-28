@@ -1,6 +1,6 @@
 ---
 name: docs-manuals
-description: "사용자 매뉴얼(Diátaxis)과 운영자 매뉴얼(런북, 배포 가이드, 설정 레퍼런스, 인시던트 플레이북) 생성. 사용자 매뉴얼/유저 가이드/튜토리얼, 운영자 매뉴얼, 런북(runbook), 배포 가이드, 온콜/인시던트 대응 문서가 필요할 때. API 명세는 docs-interfaces, 아키텍처 문서는 docs-architecture, docs CI 파이프라인은 docs-ci 사용"
+description: "사용자 매뉴얼(유저 가이드·튜토리얼·how-to)이나 운영 문서(런북·배포 가이드·설정 레퍼런스·온콜·인시던트 대응)를 만들거나 고칠 때 사용. API 명세는 docs-interfaces, 아키텍처는 docs-architecture."
 user-invocable: true
 disable-model-invocation: false
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash
@@ -60,7 +60,7 @@ $ARGUMENTS
 2. 소스 수집: 코드(설정/알림 룰/배포 스크립트), 기존 docs/, CI 설정, docker/k8s 매니페스트
 3. **코드에서 확인한 사실만 기술** — 알 수 없는 운영 값(대시보드 URL, 온콜 로테이션)은 `<!-- TODO: 운영팀 확인 -->` 마커로 남기고 목록으로 보고
 4. 기존 문서는 Edit로 갱신, 신규만 Write
-5. `docs/docs.yaml` 매니페스트 갱신
+5. `docs/docs.yaml`이 있으면 해당 항목 갱신
 6. 설명은 한국어(또는 프로젝트 언어), 명령/식별자는 원문
 
 ## 제약

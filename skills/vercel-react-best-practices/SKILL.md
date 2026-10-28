@@ -1,6 +1,6 @@
 ---
 name: vercel-react-best-practices
-description: React and Next.js performance optimization guidelines from Vercel Engineering. This skill should be used when writing, reviewing, or refactoring React/Next.js code to ensure optimal performance patterns. Triggers on tasks involving React components, Next.js pages, data fetching, bundle optimization, or performance improvements. Anti-triggers: "Vue", "Angular", "백엔드 최적화".
+description: Use when writing, reviewing or refactoring React/Next.js code for performance: rendering, data fetching, bundle size.
 license: MIT
 metadata:
   author: vercel
@@ -10,7 +10,13 @@ user-invocable: false
 
 # Vercel React Best Practices
 
-Comprehensive performance optimization guide for React and Next.js applications, maintained by Vercel. Contains 45 rules across 8 categories, prioritized by impact to guide automated refactoring and code generation.
+Performance guide for React and Next.js applications: 51 rules in 8 categories, prioritized by impact.
+
+Each rule's full explanation and incorrect/correct examples are in `rules/<rule-name>.md` in this skill folder. Read only the rules that apply to the code at hand.
+
+- **Dependencies:** when a rule suggests a library (`better-all`, `swr`, `lru-cache`), use it only if the project already has it or the user asks. Otherwise use the dependency-free alternative (early-started promises, the data-fetching library already in use, a `Map` with expiry).
+- **React Compiler:** if the project enables it, skip the manual `memo`/`useMemo`/`useCallback` rules; the compiler does that.
+- **Versions:** `<Activity>` and `useEffectEvent` need React 19.2+, `after()` needs Next.js 15.1+. Check `package.json` before applying.
 
 ## When to Apply
 
@@ -40,7 +46,7 @@ Reference these guidelines when:
 
 - `async-defer-await` - Move await into branches where actually used
 - `async-parallel` - Use Promise.all() for independent operations
-- `async-dependencies` - Use better-all for partial dependencies
+- `async-dependencies` - Start dependent promises early so partial dependencies run in parallel
 - `async-api-routes` - Start promises early, await late in API routes
 - `async-suspense-boundaries` - Use Suspense to stream content
 
@@ -54,21 +60,27 @@ Reference these guidelines when:
 
 ### 3. Server-Side Performance (HIGH)
 
+- `server-auth-actions` - Authenticate and authorize inside every Server Action
 - `server-cache-react` - Use React.cache() for per-request deduplication
 - `server-cache-lru` - Use LRU cache for cross-request caching
 - `server-serialization` - Minimize data passed to client components
 - `server-parallel-fetching` - Restructure components to parallelize fetches
 - `server-after-nonblocking` - Use after() for non-blocking operations
+- `server-dedup-props` - Avoid passing the same data twice across RSC props
 
 ### 4. Client-Side Data Fetching (MEDIUM-HIGH)
 
 - `client-swr-dedup` - Use SWR for automatic request deduplication
 - `client-event-listeners` - Deduplicate global event listeners
+- `client-passive-event-listeners` - Use passive listeners for scroll/touch
+- `client-localstorage-schema` - Version and minimize localStorage data
 
 ### 5. Re-render Optimization (MEDIUM)
 
 - `rerender-defer-reads` - Don't subscribe to state only used in callbacks
 - `rerender-memo` - Extract expensive work into memoized components
+- `rerender-memo-with-default-value` - Hoist non-primitive default props of memoized components to constants
+- `rerender-simple-expression-in-memo` - Don't wrap cheap primitive expressions in useMemo
 - `rerender-dependencies` - Use primitive dependencies in effects
 - `rerender-derived-state` - Subscribe to derived booleans, not raw values
 - `rerender-functional-setstate` - Use functional setState for stable callbacks
@@ -105,11 +117,7 @@ Reference these guidelines when:
 - `advanced-event-handler-refs` - Store event handlers in refs
 - `advanced-use-latest` - useLatest for stable callback refs
 
-## How to Use
-
-이 스킬의 규칙은 위 Quick Reference에 요약되어 있습니다. 각 규칙의 핵심 패턴:
-
-### 주요 규칙 상세
+## 자주 쓰는 규칙 예시
 
 #### async-parallel (CRITICAL)
 ```typescript
@@ -150,4 +158,4 @@ const getUser = React.cache(async (id: string) => {
 });
 ```
 
-코드 작성/리뷰 시 위 Priority 테이블의 CRITICAL → HIGH 순서로 적용합니다.
+코드 작성·리뷰 때는 위 Priority 표의 CRITICAL → HIGH 순서로 적용한다. 성능 개선을 주장할 때는 측정(번들 분석, React Profiler, Lighthouse 등)이나 코드 근거를 함께 보고한다.

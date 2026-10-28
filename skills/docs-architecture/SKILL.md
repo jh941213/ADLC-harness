@@ -1,6 +1,6 @@
 ---
 name: docs-architecture
-description: "아키텍처 문서 생성/갱신 — ARCHITECTURE.md(코드맵), 아키텍처 구성도(C4 mermaid), ADR(MADR), 데이터 모델 ERD. 아키텍처 문서/구성도 작성·갱신, ADR 기록, ERD/데이터 모델 문서화, 구조적 리팩토링 후 문서 반영이 필요할 때. API 명세는 docs-interfaces, 사용자/운영 매뉴얼은 docs-manuals, 코드 구현에는 사용하지 않음"
+description: "아키텍처 문서(ARCHITECTURE.md 코드맵, C4 구성도, ADR, ERD)를 만들거나, 구조를 바꾼 뒤 문서를 맞출 때 사용. API 명세는 docs-interfaces, 매뉴얼은 docs-manuals."
 user-invocable: true
 disable-model-invocation: false
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash
@@ -62,10 +62,10 @@ mermaid 문법과 관례는 `references/mermaid-conventions.md` 참조 (C4Contex
 
 ## 실행 절차
 
-1. 대상 파악: 인자 없으면 `git diff --name-only HEAD~5..HEAD` + 프로젝트 구조 스캔으로 변경된 구조 요소 탐지
+1. 대상 파악: 인자 없으면 기본 브랜치 대비 변경(`git diff --name-only <base>...HEAD`) + 프로젝트 구조 스캔으로 변경된 구조 요소 탐지
 2. 기존 `docs/ARCHITECTURE.md`가 있으면 Edit로 갱신 (전면 재작성 금지 — 변경된 섹션만)
 3. 다이어그램의 노드가 실제 코드 구조와 일치하는지 확인 후 생성
-4. `docs/docs.yaml` 매니페스트 갱신 (없으면 생성):
+4. `docs/docs.yaml` 매니페스트가 있으면 해당 항목 갱신 (매니페스트를 새로 두는 것은 docs-ci):
    ```yaml
    docs:
      - path: docs/ARCHITECTURE.md
@@ -76,5 +76,5 @@ mermaid 문법과 관례는 `references/mermaid-conventions.md` 참조 (C4Contex
 
 ## 제약
 
-- `docs/` 폴더만 수정. 소스 코드 수정 금지
+- `docs/`(소규모 프로젝트면 README의 아키텍처 절)만 수정. 소스 코드 수정 금지
 - 추측으로 다이어그램을 그리지 않는다 — 코드에서 확인한 관계만

@@ -1,15 +1,14 @@
 ---
 name: fastapi-templates
-description: >
-  프로덕션 수준의 FastAPI 프로젝트 생성 및 설정 가이드. async 패턴, DI, 에러 핸들링 포함.
-  트리거: "FastAPI", "Python API 프로젝트", "FastAPI 프로젝트 생성", "FastAPI 템플릿", "FastAPI 설정"
-  안티-트리거: "Django", "Flask", "Node.js API", "Express", "기존 FastAPI 수정만"
+description: 새 FastAPI 프로젝트의 구조·설정·DB 세션·인증·테스트 뼈대를 잡을 때. Triggers - FastAPI, FastAPI 프로젝트 생성, FastAPI 템플릿, FastAPI 설정. Django·Flask·Node API에는 쓰지 않는다.
 user-invocable: false
 ---
 
 # FastAPI Project Templates
 
-Production-ready FastAPI project structures with async patterns, dependency injection, middleware, and best practices for building high-performance APIs.
+FastAPI project structure with async SQLAlchemy 2.0, Pydantic v2, dependency injection, JWT auth, and tests.
+
+**Size it to the project.** The layout below is for a service that will grow several resources. A small API keeps routes, schemas and queries in a few modules; add `services/`·`repositories/` layers only when the project already uses them or the user asks. In an existing project, follow its structure instead of this one.
 
 ## When to Use This Skill
 
@@ -81,15 +80,16 @@ Proper async/await usage:
 from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
+from app.core.config import get_settings
+from app.core.database import engine
+
+settings = get_settings()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Application lifespan events."""
-    # Startup
-    await database.connect()
+    """Startup before `yield`, shutdown after."""
     yield
-    # Shutdown
-    await database.disconnect()
+    await engine.dispose()
 
 app = FastAPI(
     title="API Template",
@@ -97,10 +97,10 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# CORS middleware
+# CORS: list real origins. "*" together with credentials lets any site call the API as the user.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=settings.CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -122,35 +122,29 @@ class Settings(BaseSettings):
     SECRET_KEY: str
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     API_V1_STR: str = "/api/v1"
+    CORS_ORIGINS: list[str] = ["http://localhost:3000"]
 
 @lru_cache()
 def get_settings() -> Settings:
     return Settings()
 
 # core/database.py
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from collections.abc import AsyncIterator
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.orm import DeclarativeBase
 from app.core.config import get_settings
 
 settings = get_settings()
 
-engine = create_async_engine(
-    settings.DATABASE_URL,
-    echo=True,
-    future=True
-)
+engine = create_async_engine(settings.DATABASE_URL)  # e.g. postgresql+asyncpg://...
 
-AsyncSessionLocal = sessionmaker(
-    engine,
-    class_=AsyncSession,
-    expire_on_commit=False
-)
+AsyncSessionLocal = async_sessionmaker(engine, expire_on_commit=False)
 
-Base = declarative_base()
+class Base(DeclarativeBase):
+    pass
 
-async def get_db() -> AsyncSession:
-    """Dependency for database session."""
+async def get_db() -> AsyncIterator[AsyncSession]:
+    """One session per request; commit on success, roll back on error."""
     async with AsyncSessionLocal() as session:
         try:
             yield session
@@ -158,15 +152,13 @@ async def get_db() -> AsyncSession:
         except Exception:
             await session.rollback()
             raise
-        finally:
-            await session.close()
 ```
 
 ### Pattern 2: CRUD Repository Pattern
 
 ```python
 # repositories/base_repository.py
-from typing import Generic, TypeVar, Type, Optional, List
+from typing import Any, Generic, TypeVar, Type, Optional, List
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from pydantic import BaseModel
@@ -196,17 +188,18 @@ class BaseRepository(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
     ) -> List[ModelType]:
         """Get multiple records."""
         result = await db.execute(
-            select(self.model).offset(skip).limit(limit)
+            select(self.model).order_by(self.model.id).offset(skip).limit(limit)
         )
-        return result.scalars().all()
+        return list(result.scalars().all())
 
     async def create(
         self,
         db: AsyncSession,
-        obj_in: CreateSchemaType
+        obj_in: CreateSchemaType | dict[str, Any]
     ) -> ModelType:
         """Create new record."""
-        db_obj = self.model(**obj_in.model_dump())
+        data = obj_in if isinstance(obj_in, dict) else obj_in.model_dump()
+        db_obj = self.model(**data)
         db.add(db_obj)
         await db.flush()
         await db.refresh(db_obj)
@@ -216,10 +209,10 @@ class BaseRepository(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         self,
         db: AsyncSession,
         db_obj: ModelType,
-        obj_in: UpdateSchemaType
+        obj_in: UpdateSchemaType | dict[str, Any]
     ) -> ModelType:
         """Update record."""
-        update_data = obj_in.model_dump(exclude_unset=True)
+        update_data = obj_in if isinstance(obj_in, dict) else obj_in.model_dump(exclude_unset=True)
         for field, value in update_data.items():
             setattr(db_obj, field, value)
         await db.flush()
@@ -235,6 +228,9 @@ class BaseRepository(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         return False
 
 # repositories/user_repository.py
+from typing import Optional
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 from app.repositories.base_repository import BaseRepository
 from app.models.user import User
 from app.schemas.user import UserCreate, UserUpdate
@@ -284,13 +280,10 @@ class UserService:
         if existing:
             raise ValueError("Email already registered")
 
-        # Hash password
-        user_in_dict = user_in.model_dump()
-        user_in_dict["hashed_password"] = get_password_hash(user_in_dict.pop("password"))
-
-        # Create user
-        user = await self.repository.create(db, UserCreate(**user_in_dict))
-        return user
+        # Hash password; pass a dict so the extra column isn't dropped by schema validation
+        data = user_in.model_dump()
+        data["hashed_password"] = get_password_hash(data.pop("password"))
+        return await self.repository.create(db, data)
 
     async def authenticate(
         self,
@@ -317,14 +310,11 @@ class UserService:
         if not user:
             return None
 
-        if user_in.password:
-            user_in_dict = user_in.model_dump(exclude_unset=True)
-            user_in_dict["hashed_password"] = get_password_hash(
-                user_in_dict.pop("password")
-            )
-            user_in = UserUpdate(**user_in_dict)
+        data = user_in.model_dump(exclude_unset=True)
+        if data.get("password"):
+            data["hashed_password"] = get_password_hash(data.pop("password"))
 
-        return await self.repository.update(db, user, user_in)
+        return await self.repository.update(db, user, data)
 
 user_service = UserService()
 ```
@@ -409,41 +399,37 @@ async def delete_user(
 ### Pattern 5: Authentication & Authorization
 
 ```python
-# core/security.py
-from datetime import datetime, timedelta
+# core/security.py  (pip install pyjwt "pwdlib[argon2]")
+from datetime import datetime, timedelta, timezone
 from typing import Optional
-from jose import JWTError, jwt
-from passlib.context import CryptContext
+import jwt
+from pwdlib import PasswordHash
 from app.core.config import get_settings
 
 settings = get_settings()
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+password_hash = PasswordHash.recommended()
 
 ALGORITHM = "HS256"
 
-def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
-    """Create JWT access token."""
-    to_encode = data.copy()
-    if expires_delta:
-        expire = datetime.utcnow() + expires_delta
-    else:
-        expire = datetime.utcnow() + timedelta(minutes=15)
-    to_encode.update({"exp": expire})
+def create_access_token(subject: str | int, expires_delta: Optional[timedelta] = None) -> str:
+    """Create JWT access token. `sub` must be a string."""
+    expire = datetime.now(timezone.utc) + (expires_delta or timedelta(minutes=15))
+    to_encode = {"sub": str(subject), "exp": expire}
     encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verify password against hash."""
-    return pwd_context.verify(plain_password, hashed_password)
+    return password_hash.verify(plain_password, hashed_password)
 
 def get_password_hash(password: str) -> str:
     """Hash password."""
-    return pwd_context.hash(password)
+    return password_hash.hash(password)
 
 # api/dependencies.py
+import jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from jose import JWTError, jwt
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
@@ -451,6 +437,7 @@ from app.core.security import ALGORITHM
 from app.core.config import get_settings
 from app.repositories.user_repository import user_repository
 
+settings = get_settings()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_STR}/auth/login")
 
 async def get_current_user(
@@ -466,10 +453,8 @@ async def get_current_user(
 
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[ALGORITHM])
-        user_id: int = payload.get("sub")
-        if user_id is None:
-            raise credentials_exception
-    except JWTError:
+        user_id = int(payload["sub"])
+    except (jwt.InvalidTokenError, KeyError, ValueError):
         raise credentials_exception
 
     user = await user_repository.get(db, user_id)
@@ -482,46 +467,35 @@ async def get_current_user(
 ## Testing
 
 ```python
-# tests/conftest.py
-import pytest
-import asyncio
-from httpx import AsyncClient
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-from sqlalchemy.orm import sessionmaker
+# tests/conftest.py  (pip install pytest-asyncio httpx aiosqlite)
+import pytest_asyncio
+from httpx import ASGITransport, AsyncClient
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from app.main import app
 from app.core.database import get_db, Base
 
 TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
 
-@pytest.fixture(scope="session")
-def event_loop():
-    loop = asyncio.get_event_loop_policy().new_event_loop()
-    yield loop
-    loop.close()
-
-@pytest.fixture
+@pytest_asyncio.fixture
 async def db_session():
-    engine = create_async_engine(TEST_DATABASE_URL, echo=True)
+    engine = create_async_engine(TEST_DATABASE_URL)
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
-    AsyncSessionLocal = sessionmaker(
-        engine, class_=AsyncSession, expire_on_commit=False
-    )
-
-    async with AsyncSessionLocal() as session:
+    async with async_sessionmaker(engine, expire_on_commit=False)() as session:
         yield session
+    await engine.dispose()
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def client(db_session):
     async def override_get_db():
         yield db_session
 
     app.dependency_overrides[get_db] = override_get_db
-
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         yield client
+    app.dependency_overrides.clear()
 
 # tests/test_users.py
 import pytest
@@ -542,29 +516,19 @@ async def test_create_user(client):
     assert "id" in data
 ```
 
-## Resources
-
-- **references/fastapi-architecture.md**: Detailed architecture guide
-- **references/async-best-practices.md**: Async/await patterns
-- **references/testing-strategies.md**: Comprehensive testing guide
-- **assets/project-template/**: Complete FastAPI project
-- **assets/docker-compose.yml**: Development environment setup
-
 ## Best Practices
 
 1. **Async All The Way**: Use async for database, external APIs
 2. **Dependency Injection**: Leverage FastAPI's DI system
-3. **Repository Pattern**: Separate data access from business logic
-4. **Service Layer**: Keep business logic out of routes
-5. **Pydantic Schemas**: Strong typing for request/response
-6. **Error Handling**: Consistent error responses
-7. **Testing**: Test all layers independently
+3. **Layers only when they pay**: repository/service layers for growing multi-resource apps, not for a handful of endpoints
+4. **Pydantic Schemas**: Strong typing for request/response
+5. **Error Handling**: Consistent error responses
+6. **Testing**: Test through the HTTP API with dependency overrides
 
 ## Common Pitfalls
 
-- **Blocking Code in Async**: Using synchronous database drivers
-- **No Service Layer**: Business logic in route handlers
+- **Blocking Code in Async**: `requests`, sync DB drivers or CPU work inside `async def` blocks every request (use async libraries, plain `def` routes, or `asyncio.to_thread`)
 - **Missing Type Hints**: Loses FastAPI's benefits
 - **Ignoring Sessions**: Not properly managing database sessions
 - **No Testing**: Skipping integration tests
-- **Tight Coupling**: Direct database access in routes
+- **Secrets in code**: keep `SECRET_KEY`·`DATABASE_URL` in the environment (`.env` out of git)

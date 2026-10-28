@@ -1,128 +1,91 @@
 {
   "hooks": {
-    "Stop": [
+    "SessionStart": [
       {
+        "matcher": "startup|resume|clear|compact",
         "hooks": [
           {
             "type": "command",
-            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/ralph-loop.sh",
-            "timeout": 30
+            "command": "node -e \"import(require('node:url').pathToFileURL(require('node:path').join(process.env.PLUGIN_ROOT||process.env.CLAUDE_PLUGIN_ROOT,'hooks','session-start.mjs')).href)\"",
+            "timeout": 10
           }
         ]
       }
     ],
-    "TaskCompleted": [
+    "PreToolUse": [
       {
+        "matcher": "Edit|Write",
         "hooks": [
           {
             "type": "command",
-            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/verify-task-quality.sh",
-            "timeout": 120,
-            "statusMessage": "품질 게이트 검증 중..."
+            "if": "Edit(**/*.tsx)",
+            "command": "node -e \"import(require('node:url').pathToFileURL(require('node:path').join(process.env.PLUGIN_ROOT||process.env.CLAUDE_PLUGIN_ROOT,'hooks','frontend-check.mjs')).href)\"",
+            "timeout": 5
           },
           {
             "type": "command",
-            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/docs-sync.sh",
-            "timeout": 10,
-            "statusMessage": "docs 동기화 큐 기록 중..."
-          }
-        ]
-      }
-    ],
-    "TeammateIdle": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/check-remaining-tasks.sh",
-            "statusMessage": "남은 태스크 확인 중..."
-          }
-        ]
-      }
-    ],
-    "SubagentStart": [
-      {
-        "matcher": "*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/subagent-tracker.sh",
-            "timeout": 5,
-            "statusMessage": "에이전트 스폰 추적 중..."
-          }
-        ]
-      }
-    ],
-    "SubagentStop": [
-      {
-        "matcher": "*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/subagent-stop-tracker.sh",
-            "timeout": 5,
-            "statusMessage": "서브에이전트 완료 확인 중..."
-          }
-        ]
-      }
-    ],
-    "PostToolUseFailure": [
-      {
-        "matcher": "*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/failure-tracker.sh",
-            "timeout": 5,
-            "statusMessage": "실패 패턴 추적 중..."
-          }
-        ]
-      }
-    ],
-    "PostCompact": [
-      {
-        "matcher": "*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/post-compact-guard.sh",
-            "timeout": 5,
-            "statusMessage": "컨텍스트 복구 안내 중..."
-          }
-        ]
-      }
-    ],
-    "ConfigChange": [
-      {
-        "matcher": "*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/config-change-guard.sh",
+            "if": "Write(**/*.tsx)",
+            "command": "node -e \"import(require('node:url').pathToFileURL(require('node:path').join(process.env.PLUGIN_ROOT||process.env.CLAUDE_PLUGIN_ROOT,'hooks','frontend-check.mjs')).href)\"",
             "timeout": 5
-          }
-        ]
-      }
-    ],
-    "WorktreeCreate": [
-      {
-        "matcher": "*",
-        "hooks": [
+          },
           {
             "type": "command",
-            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/worktree-tracker.sh",
+            "if": "Edit(**/*.jsx)",
+            "command": "node -e \"import(require('node:url').pathToFileURL(require('node:path').join(process.env.PLUGIN_ROOT||process.env.CLAUDE_PLUGIN_ROOT,'hooks','frontend-check.mjs')).href)\"",
             "timeout": 5
-          }
-        ]
-      }
-    ],
-    "WorktreeRemove": [
-      {
-        "matcher": "*",
-        "hooks": [
+          },
           {
             "type": "command",
-            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/worktree-tracker.sh",
+            "if": "Write(**/*.jsx)",
+            "command": "node -e \"import(require('node:url').pathToFileURL(require('node:path').join(process.env.PLUGIN_ROOT||process.env.CLAUDE_PLUGIN_ROOT,'hooks','frontend-check.mjs')).href)\"",
+            "timeout": 5
+          },
+          {
+            "type": "command",
+            "if": "Edit(**/*.vue)",
+            "command": "node -e \"import(require('node:url').pathToFileURL(require('node:path').join(process.env.PLUGIN_ROOT||process.env.CLAUDE_PLUGIN_ROOT,'hooks','frontend-check.mjs')).href)\"",
+            "timeout": 5
+          },
+          {
+            "type": "command",
+            "if": "Write(**/*.vue)",
+            "command": "node -e \"import(require('node:url').pathToFileURL(require('node:path').join(process.env.PLUGIN_ROOT||process.env.CLAUDE_PLUGIN_ROOT,'hooks','frontend-check.mjs')).href)\"",
+            "timeout": 5
+          },
+          {
+            "type": "command",
+            "if": "Edit(**/*.svelte)",
+            "command": "node -e \"import(require('node:url').pathToFileURL(require('node:path').join(process.env.PLUGIN_ROOT||process.env.CLAUDE_PLUGIN_ROOT,'hooks','frontend-check.mjs')).href)\"",
+            "timeout": 5
+          },
+          {
+            "type": "command",
+            "if": "Write(**/*.svelte)",
+            "command": "node -e \"import(require('node:url').pathToFileURL(require('node:path').join(process.env.PLUGIN_ROOT||process.env.CLAUDE_PLUGIN_ROOT,'hooks','frontend-check.mjs')).href)\"",
+            "timeout": 5
+          },
+          {
+            "type": "command",
+            "if": "Edit(**/*.css)",
+            "command": "node -e \"import(require('node:url').pathToFileURL(require('node:path').join(process.env.PLUGIN_ROOT||process.env.CLAUDE_PLUGIN_ROOT,'hooks','frontend-check.mjs')).href)\"",
+            "timeout": 5
+          },
+          {
+            "type": "command",
+            "if": "Write(**/*.css)",
+            "command": "node -e \"import(require('node:url').pathToFileURL(require('node:path').join(process.env.PLUGIN_ROOT||process.env.CLAUDE_PLUGIN_ROOT,'hooks','frontend-check.mjs')).href)\"",
+            "timeout": 5
+          },
+          {
+            "type": "command",
+            "if": "Edit(**/*.html)",
+            "command": "node -e \"import(require('node:url').pathToFileURL(require('node:path').join(process.env.PLUGIN_ROOT||process.env.CLAUDE_PLUGIN_ROOT,'hooks','frontend-check.mjs')).href)\"",
+            "timeout": 5
+          },
+          {
+            "type": "command",
+            "if": "Write(**/*.html)",
+            "command": "node -e \"import(require('node:url').pathToFileURL(require('node:path').join(process.env.PLUGIN_ROOT||process.env.CLAUDE_PLUGIN_ROOT,'hooks','frontend-check.mjs')).href)\"",
             "timeout": 5
           }
         ]
