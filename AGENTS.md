@@ -8,7 +8,7 @@
 - 세션 시작 고정 문맥(`ponytail.md` + `context.md`)은 4,000자 이하. 동적 내용(메모리 폴더·인계·색인·점검)은 고정 문맥 뒤에 붙인다(프롬프트 캐시).
 - 스킬 description 합계 7,000자 이하(Codex 스킬 목록 예산 8,000자). description은 "언제 쓰나"만 쓰고 절차를 요약하지 않는다.
 - SKILL.md 하나는 20,000자 미만(Claude Code가 압축 뒤 그 이상을 잘라 다시 붙인다). 길면 `references/`로 나눈다.
-- 런타임 의존성을 두지 않는다. hook과 스크립트(`skills/memorybox/scripts/memorybox.mjs`)는 Node 표준 라이브러리만 쓴다.
+- 런타임 의존성을 두지 않는다. hook과 스크립트(`skills/memorybox/scripts/memorybox.mjs`)는 Node 표준 라이브러리만 쓴다. `skills/design-md/scripts/capture.mjs`의 Playwright는 사용자 프로젝트에 있을 때만 불러 쓰는 선택 도구다.
 
 ## 고칠 때
 

@@ -1,7 +1,7 @@
 {
   "name": "adlc-harness",
   "displayName": "ADLC Harness",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "description": "Ponytail·의도→설계→계획 흐름·auto memory 확장·리드/워커 메모리박스·검증 투표 리뷰를 묶은 Claude Code·Codex·Copilot CLI 공용 개발 하네스. 런타임 의존성 0.",
   "author": {
     "name": "jh941213"

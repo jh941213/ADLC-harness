@@ -25,7 +25,7 @@ description: 작업 흐름을 잊었거나 하네스 특성을 다시 확인할 
 |---|---|---|---|---|
 | 1 | 의도 | `brainstorming` | `intent.md`: 사용자 말 그대로의 문제·원하는 결과·영향 대상·제약·열린 질문 | 사람 승인 |
 | 2 | 설계 | `brainstorming` | `spec.md`: 동작·구조, `## 수용 기준`(R1…, 숫자 목표), `## 우려 사항` | 사람 승인 |
-|  | 디자인 | `brainstorming`, impeccable | 화면 작업이면 `design.md`: 디자인 방향·토큰·컴포넌트·화면 흐름과 상태. 프로젝트 `DESIGN.md`가 있으면 따른다 | 사람 승인 |
+|  | 디자인 | `design-md`(참고 사이트 캡처·디자인 시스템 반영), impeccable | 화면 작업이면 `design.md`: 디자인 방향·토큰·컴포넌트·화면 흐름과 상태. 프로젝트 `DESIGN.md`가 있으면 따른다 | 사람 승인 |
 | 3 | 계획 | `writing-plans` | `plan.md`: Task마다 R#, 파일·테스트·검증 명령, 체크박스, `승인:`·`재개:` 줄 | 사람 승인 |
 | 4 | 구현 | `test-driven-development`, `systematic-debugging`, `build-fix` | 코드·테스트, 체크된 plan | 자동 |
 | 5 | 검증 | `verification-before-completion`, `evaluator` | 전체 검사 출력, R#별 판정 | 자동 |

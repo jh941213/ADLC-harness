@@ -1,5 +1,7 @@
 # ADLC Harness
 
+<p align="center"><img src="assets/adlc-loop.jpg" alt="세 터미널(Claude Code·Codex·Copilot CLI)이 의도·설계·계획·구현·검증·리뷰·출시·학습 여덟 단계의 무한 루프로 이어지는 그림" width="100%"></p>
+
 **AI SDLC 루프**(의도 → 설계 → 계획 → 구현 → 검증 → 리뷰 → 출시 → 학습)를 Claude Code·Codex·GitHub Copilot CLI에서 같은 방식으로 돌리는 개발 하네스 플러그인이다. 상시 컨텍스트와 hook은 최소로 두고, 나머지는 필요할 때만 읽히는 스킬로 둔다.
 
 - **루프**: `/loopeng <요청>` 하나로 의도부터 PR·학습까지 간다. 사람은 의도·설계·계획·출시 게이트에서만 승인하고, 단계마다 문서와 승인 기록이 커밋으로 남는다.
@@ -8,7 +10,7 @@
 - **여러 에이전트**: 리드와 워커는 파일로 된 메모리박스로 일을 주고받는다(서브에이전트·Codex·Orca 워커). 작업 중 알게 된 것과 배운 점이 메모리로 올라간다.
 - **리뷰**: 렌즈별 병렬 탐색 → 검증 에이전트 투표 → 심각도·위험 등급.
 
-hook 2개, 스킬 28개, 에이전트 3개, 런타임 의존성 0.
+hook 2개, 스킬 29개, 에이전트 3개, 런타임 의존성 0.
 
 쓰다가 흐름이나 특성이 헷갈리면 `harness-guide` 스킬을 본다. SDLC 단계와 문서, 서브에이전트 띄우는 법, 메모리 쓰는 법, 문서·리뷰 스킬을 한 곳에 모았다. `scaffold`와 `memory` 스킬이 만드는 프로젝트 AGENTS.md에도 이 가이드를 가리키는 `## 하네스 가이드` 절이 들어간다.
 
@@ -57,7 +59,7 @@ Node.js 22 이상이 필요하다.
 |---|---|---|
 | 의도 | `docs/work/<날짜>-<주제>/intent.md`: 사용자 말 그대로의 문제·결과·대상·제약·열린 질문 | `brainstorming` |
 | 설계 | 같은 폴더의 `spec.md`: 동작·구조, 번호 붙은 수용 기준(R1…, 숫자 목표 포함)과 우려 사항 | `brainstorming` |
-| 디자인 | 화면 작업이면 같은 폴더의 `design.md`: 디자인 방향·토큰·컴포넌트·화면 흐름과 상태. 프로젝트 `DESIGN.md`가 있으면 그것을 따른다 | `brainstorming`, impeccable |
+| 디자인 | 화면 작업이면 같은 폴더의 `design.md`: 디자인 방향·토큰·컴포넌트·화면 흐름과 상태. 참고 사이트를 Playwright·REA로 캡처해 색·글꼴·간격을 측정하거나, 주어진 디자인 시스템(링크·패키지·Figma·DESIGN.md)을 기준으로 삼는다 | `design-md`, impeccable |
 | 뼈대 | 새 프로젝트일 때. 질문으로 스택을 정하고 공식 생성기로 만든다. 전체 검사 명령과 AGENTS.md까지. 원하면 가드레일(보호 경로 차단, 배포·푸시는 사람 승인, 편집 뒤 포매터)을 `.claude/settings.json`에 넣는다 | `scaffold` |
 | 계획 | `plan.md`: Task마다 채우는 R#, 파일·시그니처·테스트 assertion·검증 명령 | `writing-plans` |
 | 구현·테스트 | 재현 테스트를 먼저 쓴다. 통과 기준은 전체 검사 | `test-driven-development`, `systematic-debugging`, `verification-before-completion` |
@@ -164,7 +166,7 @@ memorybox/artifacts/ archive/YYYY-MM/ BOARD.md
 .claude-plugin/        Claude Code·Copilot manifest, marketplace
 .codex-plugin/         Codex manifest      .agents/plugins/  Codex marketplace
 hooks/                 hooks.json, session-start.mjs, frontend-check.mjs, lib.mjs, ponytail.md, context.md
-skills/                스킬 28개 (가이드·루프·흐름·프로젝트·리뷰·조사·메모리박스·문서·백엔드·정리)
+skills/                스킬 29개 (가이드·루프·흐름·디자인·프로젝트·리뷰·조사·메모리박스·문서·백엔드·정리)
 agents/                evaluator, security-reviewer, docs-writer
 commands/docs.md       /docs
 rtk/rtk-config.toml    RTK 안전 설정

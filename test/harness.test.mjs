@@ -152,7 +152,7 @@ test('the fixed session context and the skill list stay inside their budgets', (
 test('every skill a rule or another skill names is bundled', () => {
   const texts = [readFileSync(join(REPO, 'hooks', 'context.md'), 'utf8'),
     ...SKILLS.map(s => readFileSync(join(REPO, 'skills', s, 'SKILL.md'), 'utf8'))].join('\n');
-  for (const name of ['brainstorming', 'writing-plans', 'systematic-debugging', 'test-driven-development', 'verification-before-completion', 'memory', 'scaffold', 'loopeng', 'harness-guide']) {
+  for (const name of ['brainstorming', 'writing-plans', 'systematic-debugging', 'test-driven-development', 'verification-before-completion', 'memory', 'scaffold', 'loopeng', 'harness-guide', 'design-md']) {
     assert.ok(SKILLS.includes(name), name);
   }
   assert.doesNotMatch(texts, /kode-|kds-design|bmad-|e2e-doc|codex-review/);
@@ -175,8 +175,18 @@ test('project AGENTS.md templates point at harness-guide, and the guide covers f
   assert.match(read('skills/loopeng/SKILL.md'), /`harness-guide`에 있다/);
 });
 
+test('design-md: contrast is measured per WCAG, and capture asks for Playwright instead of crashing', () => {
+  const script = join(REPO, 'skills', 'design-md', 'scripts', 'capture.mjs');
+  const run = (...args) => spawnSync(process.execPath, [script, ...args], { cwd: TMP, encoding: 'utf8' });
+  assert.match(run('contrast', '#777', '#fff').stdout, /^4\.48:1 — AA 본문 미달, AA 큰 글자·UI 통과/);
+  assert.match(run('contrast', 'rgb(255,255,255)', '#0b1f3a').stdout, /^16\.52:1 — AA 본문 통과/);
+  const missing = run('https://example.com');
+  assert.equal(missing.status, 2);
+  assert.match(missing.stderr, /Playwright가 이 프로젝트에 없다/);
+});
+
 test('credits live only in skills/NOTICE.md', () => {
-  const files = readdirSync(REPO, { recursive: true }).filter(f => !/^(\.git|node_modules|test)([\\/]|$)/.test(f) && f !== join('skills', 'NOTICE.md'));
+  const files = readdirSync(REPO, { recursive: true }).filter(f => !/^(\.git|node_modules|test)([\\/]|$)/.test(f) && f !== join('skills', 'NOTICE.md') && !/\.(png|jpe?g|gif|webp)$/i.test(f));
   const credit = /superpowers|prime ?radiant|obra\/|wshobson|jesse vincent|dietrichgebert|adapted from|inspired by|claude\.(dev|com)\/blog|anthropic\.com\/engineering|Anthropic(식| Claude Code 팀)|codeband|band-ai|토스 Security|kode-harness|참고했|옮겼다|^\s*(#|\/\/|>)?\s*출처:/im;
   for (const f of files) {
     let text = '';

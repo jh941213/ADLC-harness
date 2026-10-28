@@ -19,7 +19,7 @@ Claude Code에서 다른 플러그인과 이름이 겹치면 `/adlc-harness:loop
 
 ## 단계
 
-1 의도(`brainstorming` → `intent.md`) · 2 설계(`brainstorming` → `spec.md`, 화면이면 `design.md`) · 3 계획(`writing-plans` → `plan.md`) · 4 구현(`test-driven-development`, 독립 Task가 여럿이면 `memorybox`) · 5 검증(전체 검사 + `evaluator`) · 6 리뷰(`review`) · 7 출시(`commit-push-pr`) · 8 학습(`memory`). 게이트는 1·2·3·7이다.
+1 의도(`brainstorming` → `intent.md`) · 2 설계(`brainstorming` → `spec.md`, 화면이면 `design-md` → `design.md`) · 3 계획(`writing-plans` → `plan.md`) · 4 구현(`test-driven-development`, 독립 Task가 여럿이면 `memorybox`) · 5 검증(전체 검사 + `evaluator`) · 6 리뷰(`review`) · 7 출시(`commit-push-pr`) · 8 학습(`memory`). 게이트는 1·2·3·7이다.
 
 단계별 산출물과 문서 규칙, 서브에이전트 띄우는 법, 메모리 쓰는 법은 `harness-guide`에 있다. 루프를 열 때 한 번 읽고, 흐름이 헷갈리면 다시 읽는다.
 
